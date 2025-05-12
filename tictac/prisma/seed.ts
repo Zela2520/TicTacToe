@@ -1,45 +1,63 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
+
 async function main() {
-  const user = prisma.user.create({
+  // Создаем пользователей и сразу ждем их создания
+  const user1 = await prisma.user.create({
     data: {
-      id: 'adasd',
-      login: 'user',
-      passwordHash: 'adasd',
+      id: 'user1_id',
+      login: 'player1',
+      passwordHash: 'hash1',
       rating: 1000,
     }
-  })
-  const user2 = prisma.user.create({
+  });
+
+  const user2 = await prisma.user.create({
     data: {
-      id: 'adasdsdsd',
-      login: 'user2',
-      passwordHash: 'adasdsd',
-      rating: 600,
+      id: 'user2_id',
+      login: 'player2',
+      passwordHash: 'hash2',
+      rating: 800,
     }
-  })
+  });
+
+  // Создаем игру в состоянии idle
   await prisma.game.create({
     data: {
       field: Array(9).fill(null),
       status: 'idle',
       players: {
-        connect: {
-          id: (await user).id,
-        }
+        connect: [{ id: user1.id }]
       }
     },
   });
+
+  // Создаем игру в процессе
   await prisma.game.create({
     data: {
       field: Array(9).fill(null),
-      status: 'idle',
+      status: 'inProgress',
       players: {
-        connect: {
-          id: (await user2).id,
-        }
+        connect: [{ id: user1.id }, { id: user2.id }]
+      }
+    },
+  });
+
+  // Создаем завершенную игру с победителем
+  await prisma.game.create({
+    data: {
+      field: ['X', 'O', 'X', 'O', 'X', 'O', 'X', null, null],
+      status: 'gameOver',
+      players: {
+        connect: [{ id: user1.id }, { id: user2.id }]
+      },
+      winner: {
+        connect: { id: user1.id }
       }
     },
   });
 }
+
 main()
   .then(async () => {
     await prisma.$disconnect();
